@@ -1,0 +1,4 @@
+{:deps {
+        hiccup/hiccup              {:mvn/version "1.0.5"}
+        ;; binaryage/cljs-devtools    {:mvn/version ""}
+        }}
