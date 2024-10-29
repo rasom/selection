@@ -5,7 +5,7 @@ watch:
 	npx shadow-cljs watch :app
 
 prepare-release: generate-index
-	rm -rf release ;\
-	mkdir -p release ;\
-	cp public/*.html release/ ;\
-	npx shadow-cljs release :app --config-merge '{:output-dir "release/js/compiled"}'
+	rm -rf docs ;\
+	mkdir -p docs ;\
+	cp public/*.html docs/ ;\
+	npx shadow-cljs release :app --config-merge '{:output-dir "docs/js/compiled"}'
