@@ -42,10 +42,9 @@
    [:thead
     [:tr
      [:th {:scope :col
-           :style {:width "70%"}}
+           :style {:width "90%"}}
       "Name"]
-     [:th {:scope :col
-           :style {:width "70%"}}
+     [:th {:scope :col}
       "Rating"]]]
    [:tbody
     (for [{:keys [name rating id]} (get-sub [:players])]
@@ -73,8 +72,8 @@
       (fn [{:keys [name rating id]}]
         ^{:key id}
         [:tr
-         [:td name]
-         [:td rating]])
+         [:td {:style {:width "90%"}} name]
+         [:td {:style {:width "10%"}} rating]])
       players)
      [^{:key :rating}
       [:tr
@@ -105,14 +104,12 @@
           "Copy selection"]]]]
       [:tbody
        [:tr
-        [:td
-         [suggested-team team1]]
-        [:td
-         [suggested-team team2]]]]]]))
+        [:td {:style {:width "50%"}} [suggested-team team1]]
+        [:td {:style {:width "50%"}} [suggested-team team2]]]]]]))
 
 (defn list-view []
   (if (get-sub [:empty-list?])
-    [:div.row
+    [:div.row.justify-content-md-center
      [:div.row-sm
       [:div.input-group
        [:span.input-group-text "Players list"]
@@ -122,7 +119,7 @@
          :on-change #(re-frame/dispatch [:set-list (get-value %)])}]]]
      [:div.row-sm
       [primbut #(re-frame/dispatch [:save-list]) "Save list"]]]
-    [:div.row
+    [:div.row.justify-content-md-center
      [:div.row-sm
       [primbut #(re-frame/dispatch [:clear-list]) "Clear list"]]
      [:div.row-sm
@@ -135,6 +132,7 @@
   [:div
    [nav]
    [:div.container-fluid
+    {:style {:max-width 600}}
     [list-view]]])
 
 (defn ^:dev/after-load tests []
