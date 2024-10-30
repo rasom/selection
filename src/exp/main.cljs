@@ -4,6 +4,7 @@
             [cljs.test :as c.test]
             [goog.string :as gstring]
             [goog.string.format]
+            [clojure.string :as clojure.string]
             exp.handlers
             exp.subs))
 
@@ -89,18 +90,28 @@
     (js/document.execCommand "copy")
     (.removeChild js/document.body el)))
 
+(defn team-list [{:keys [players]}]
+  (->> players
+       (map :name)
+       sort
+       (clojure.string/join "\n")))
+
+(defn players-list->string [team1 team2]
+  (clojure.string/join [(team-list team1)
+                        "\n\nvs\n\n"
+                        (team-list team2)]))
+
 (defn suggestion [title label]
   (let [[team1 team2] (get-sub [:suggestion label])]
     [:div.row-sm
      [:table.table.table-sm
       [:thead
        [:tr
-        [:th {:scope :col}
-         title]
+        [:th {:scope :col} title]
         [:th
-         [primbut (let [str-list (get-sub [:str-suggestion label])]
-                    #(do (.stopPropagation %)
-                         (copy-to-clipboard str-list)))
+         [primbut #(do (.stopPropagation %)
+                       (copy-to-clipboard
+                        (players-list->string team1 team2)))
           "Copy selection"]]]]
       [:tbody
        [:tr

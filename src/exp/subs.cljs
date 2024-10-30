@@ -12,22 +12,6 @@
  (fn [db]
    (:suggestions db)))
 
-(defn team-list [{:keys [players]}]
-  (->> players
-       (map :name)
-       sort
-       (clojure.string/join "\n")))
-
-(re-frame/reg-sub
- :str-suggestion
- (fn [[_ label]]
-   [(re-frame/subscribe [:suggestion label])])
- (fn [suggestion]
-   (clojure.string/join
-    [(team-list (first suggestion))
-     "\n\nvs\n\n"
-     (team-list (second suggestion))])))
-
 (re-frame/reg-sub
  :suggestion
  :<- [:raw-suggestion]
