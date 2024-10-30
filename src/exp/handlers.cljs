@@ -39,7 +39,7 @@
 (defn list->names [string-list]
   (->> string-list
        string/split-lines
-       (map #(second (re-find #"^[^\.]*\.[\s]*([^$]*)" %)))))
+       (keep #(second (re-find #"^\d[^\.]*\.[\s]*([^$]*)" %)))))
 
 (defn parse-list [string-list]
   (->> string-list
