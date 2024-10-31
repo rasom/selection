@@ -1,5 +1,6 @@
 (ns exp.main
   (:require [reagent.dom :as reagent.dom]
+            [reagent.core :as reagent.core]
             [re-frame.core :as re-frame]
             [cljs.test :as c.test]
             [goog.string :as gstring]
@@ -101,18 +102,28 @@
                         "\n\nvs\n\n"
                         (team-list team2)]))
 
+(defn copy-label [just-copied?]
+  [:label "Copy selection "
+   (when @just-copied?
+     [:i.bi.bi-check])])
+
 (defn suggestion [title label]
-  (let [[team1 team2] (get-sub [:suggestion label])]
+  (let [[team1 team2] (get-sub [:suggestion label])
+        just-copied?  (reagent.core/atom false)]
     [:div.row-sm
      [:table.table.table-sm
       [:thead
        [:tr
         [:th {:scope :col} title]
         [:th
-         [primbut #(do (.stopPropagation %)
+         [primbut #(do (reset! just-copied? true)
+                       (js/setInterval
+                        (fn [] (reset! just-copied? false))
+                        1000)
+                       (.stopPropagation %)
                        (copy-to-clipboard
                         (players-list->string team1 team2)))
-          "Copy selection"]]]]
+          [copy-label just-copied?]]]]]
       [:tbody
        [:tr
         [:td {:style {:width "50%"}} [suggested-team team1]]
