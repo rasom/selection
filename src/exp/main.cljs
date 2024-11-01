@@ -26,6 +26,8 @@
 (defn get-sub [params]
   @(re-frame/subscribe params))
 
+(def dev-mode? js/goog.DEBUG)
+
 (defn nav []
   [:nav.navbar.navbar-expand-lg.navbar-light.bg-light
    [:div.container-fluid
@@ -58,7 +60,7 @@
          {:style {:width 100
                   :height 29}
           :aria-label "Rating"
-          :default-value rating
+          :value rating
           :on-change #(re-frame/dispatch [:set-rating id (get-value %)])}
          (for [r (range 1 8)]
            ^{:key r}
@@ -129,6 +131,18 @@
         [:td {:style {:width "50%"}} [suggested-team team1]]
         [:td {:style {:width "50%"}} [suggested-team team2]]]]]]))
 
+(def default-list
+  "1. Adam
+2. Roman
+3. Sikor
+4. Karol
+5. Franek
+6. Darek R
+7. Dima
+8. Dawid
+9. Kamil
+10. Hamid")
+
 (defn list-view []
   (if (get-sub [:empty-list?])
     [:div.row.justify-content-md-center
@@ -138,12 +152,15 @@
        [:textarea.form-control
         {:aria-label "Players list"
          :rows 10
+         :default-value (when dev-mode? default-list)
          :on-change #(re-frame/dispatch [:set-list (get-value %)])}]]]
      [:div.row-sm
       [primbut #(re-frame/dispatch [:save-list]) "Save list"]]]
     [:div.row.justify-content-md-center
-     [:div.row-sm
-      [primbut #(re-frame/dispatch [:clear-list]) "Clear list"]]
+     [:div.row.row-sm
+      [:div.col.col-sm.d-flex.justify-content-between
+       [primbut #(re-frame/dispatch [:clear-list]) "Clear list"]
+       [primbut #(re-frame/dispatch [:reset-ratings]) "Reset ratings"]]] ;
      [:div.row-sm
       [players-table]]
      [suggestion "Best first" :best]

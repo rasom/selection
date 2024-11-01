@@ -52,11 +52,13 @@
  (fn [db list]
    (assoc db :raw-list list)))
 
+(def default-rating 4)
+
 (defn add-ratings
   [ratings players]
   (map
    (fn [{:keys [name] :as player}]
-     (assoc player :rating (get ratings name 1)))
+     (assoc player :rating (get ratings name default-rating)))
    players))
 
 (handler
@@ -81,6 +83,18 @@
      (-> db
          (assoc-in [:players-list id :rating] rating)
          (assoc-in [:ratings (get-in db [:players-list id :name])] rating)))))
+
+(handler
+ :reset-ratings
+ (fn [{:keys [players-list] :as db}]
+   (-> db
+       (assoc :players-list
+              (reduce
+               (fn [players [id]]
+                 (assoc-in players [id :rating] default-rating))
+               players-list
+               players-list))
+       (assoc :ratings {}))))
 
 (re-frame/reg-flow
  {:id     :suggestions
