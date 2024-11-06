@@ -1,10 +1,12 @@
 (ns exp.handlers
   (:require [clojure.edn :as clojure.edn]
             [re-frame.alpha :as re-frame]
+            [day8.re-frame.tracing :refer-macros [fn-traced]]
             [clojure.string :as string]
             [cljs.test :as c.test]
-            [exp.algo :as algo]
-            ))
+            [exp.algo :as algo]))
+
+(def default-db {:teams-number 2})
 
 (def db-interceptor
   (re-frame/after
@@ -17,20 +19,22 @@
   (re-frame/reg-event-db
    n
    all-interceptors
-   (fn [db [_ & params]]
+   (fn-traced [db [_ & params]]
      (apply h db params))))
 
 (defn handler-fx [n h]
   (re-frame/reg-event-fx
    n
    all-interceptors
-   (fn [{:keys [db] :as cofx} [_ & params]]
-     (apply h cofx db params))))
+   (fn-traced [{:keys [db] :as cofx} [_ & params]]
+              (apply h cofx db params))))
 
 (handler
  :init
- (fn [_ db]
-   (clojure.edn/read-string db)))
+ (fn [_ str-db]
+   (if (empty? str-db)
+     default-db
+     (clojure.edn/read-string str-db))))
 
 (handler
  :reset-db
@@ -98,33 +102,40 @@
 
 (re-frame/reg-flow
  {:id     :suggestions
-  :inputs {:players-list [:players-list]}
-  :output (fn [{:keys [players-list]}]
-            {:best
-             (-> players-list
-                 vals
-                 (algo/from-top
-                  {:white {:players [], :rating 0},
-                   :black {:players [], :rating 0}}
-                  #{})
-                 vals)
-             :worst
-             (-> players-list
-                 vals
-                 (algo/from-bottom
-                  {:white {:players [], :rating 0},
-                   :black {:players [], :rating 0}}
-                  #{})
-                 vals)
-             :avg
-             (-> players-list
-                 vals
-                 (algo/avg-vs-rest
-                  {:white {:players [], :rating 0},
-                   :black {:players [], :rating 0}}
-                  #{})
-                 vals)})
+  :inputs {:players-list [:players-list]
+           :teams-number [:teams-number]}
+  :output (fn [{:keys [players-list teams-number]}]
+            (let [teams (cond->
+                         {:white {:players [], :rating 0},
+                          :black {:players [], :rating 0}
+                          :green {:players [], :rating 0}}
+                          (= 2 teams-number)
+                          (dissoc :green))]
+              {:best
+               (-> players-list
+                   vals
+                   (algo/from-top teams #{})
+                   vals)
+               :worst
+               (-> players-list
+                   vals
+                   (algo/from-top teams #{})
+                   vals)
+               :avg
+               (when (= 2 teams-number)
+                 (-> players-list
+                     vals
+                     (algo/avg-vs-rest
+                      {:white {:players [], :rating 0},
+                       :black {:players [], :rating 0}}
+                      #{})
+                     vals))}))
   :path   [:suggestions]})
+
+(handler
+ :set-teams-number
+ (fn [db str-number]
+   (assoc db :teams-number (js/parseInt str-number))))
 
 (c.test/deftest test-parse-list
   (c.test/is (= (parse-list

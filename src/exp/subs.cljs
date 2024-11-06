@@ -1,6 +1,5 @@
 (ns exp.subs
-  (:require [re-frame.core :as re-frame]
-            [clojure.string :as clojure.string]))
+  (:require [re-frame.core :as re-frame]))
 
 (re-frame/reg-sub
   :players-list
@@ -13,15 +12,21 @@
    (:suggestions db)))
 
 (re-frame/reg-sub
+ :teams-number
+ (fn [db]
+   (:teams-number db)))
+
+(re-frame/reg-sub
  :suggestion
  :<- [:raw-suggestion]
  (fn [raw-suggestion [_ label]]
-   (map (fn [{:keys [players rating] :as team}]
-          (let [ratings (map :rating players)]
-            (assoc team
-                   :max (- rating (apply min ratings))
-                   :min (- rating (apply max ratings)))))
-        (label raw-suggestion))))
+   (when-let [suggestion (label raw-suggestion)]
+     (map (fn [{:keys [players rating] :as team}]
+            (let [ratings (map :rating players)]
+              (assoc team
+                     :max (- rating (apply min ratings))
+                     :min (- rating (apply max ratings)))))
+          suggestion))))
 
 (re-frame/reg-sub
  :players

@@ -37,7 +37,7 @@
 
 (defn primbut [on-click text]
   [:button.btn.btn-primary.btn-sm
-   {:type :submit
+   {:type     :submit
     :on-click on-click}
    text])
 
@@ -57,11 +57,11 @@
        [:td name]
        [:td
         [:select.form-select.form-select-sm
-         {:style {:width 100
-                  :height 29}
+         {:style      {:width  100
+                       :height 29}
           :aria-label "Rating"
-          :value rating
-          :on-change #(re-frame/dispatch [:set-rating id (get-value %)])}
+          :value      rating
+          :on-change  #(re-frame/dispatch [:set-rating id (get-value %)])}
          (for [r (range 1 8)]
            ^{:key r}
            [:option
@@ -99,10 +99,11 @@
        sort
        (clojure.string/join "\n")))
 
-(defn players-list->string [team1 team2]
-  (clojure.string/join [(team-list team1)
-                        "\n\nvs\n\n"
-                        (team-list team2)]))
+(defn players-list->string [teams]
+  (->> teams
+       (map team-list)
+       (interpose "\n\nvs\n\n")
+       clojure.string/join))
 
 (defn copy-label [just-copied?]
   [:label "Copy selection "
@@ -110,26 +111,29 @@
      [:i.bi.bi-check])])
 
 (defn suggestion [title label]
-  (let [[team1 team2] (get-sub [:suggestion label])
-        just-copied?  (reagent.core/atom false)]
-    [:div.row-sm
-     [:table.table.table-sm
-      [:thead
-       [:tr
-        [:th {:scope :col} title]
-        [:th
-         [primbut #(do (reset! just-copied? true)
-                       (js/setInterval
-                        (fn [] (reset! just-copied? false))
-                        1000)
-                       (.stopPropagation %)
-                       (copy-to-clipboard
-                        (players-list->string team1 team2)))
-          [copy-label just-copied?]]]]]
-      [:tbody
-       [:tr
-        [:td {:style {:width "50%"}} [suggested-team team1]]
-        [:td {:style {:width "50%"}} [suggested-team team2]]]]]]))
+  (let [teams        (get-sub [:suggestion label])
+        just-copied? (reagent.core/atom false)]
+    (when teams
+      [:div.row-sm
+       [:table.table.table-sm
+        [:thead
+         [:tr
+          [:th {:scope :col} title]
+          [:th
+           [primbut #(do (reset! just-copied? true)
+                         (js/setInterval
+                          (fn [] (reset! just-copied? false))
+                          1000)
+                         (.stopPropagation %)
+                         (copy-to-clipboard
+                          (players-list->string teams)))
+            [copy-label just-copied?]]]]]
+        [:tbody
+         [:tr
+          (for [team teams]
+            ^{:key (:name team)}
+            [:td {:style {:width (goog.string/format "%d%" (/ 100 (get-sub [:teams-number])))}}
+             [suggested-team team]])]]]])))
 
 (def default-list
   "1. Adam
@@ -143,6 +147,19 @@
 9. Kamil
 10. Hamid")
 
+(defn number-of-teams []
+  [:select.form-select.form-select-sm
+   {:style      {:width  100
+                 :height 29}
+    :aria-label "Number of teams"
+    :value      (get-sub [:teams-number])
+    :on-change  #(re-frame/dispatch [:set-teams-number (get-value %)])}
+   (for [r (range 2 4)]
+     ^{:key r}
+     [:option
+      {:value r}
+      (gstring/format "%d teams" r)])])
+
 (defn list-view []
   (if (get-sub [:empty-list?])
     [:div.row.justify-content-md-center
@@ -150,16 +167,17 @@
       [:div.input-group
        [:span.input-group-text "Players list"]
        [:textarea.form-control
-        {:aria-label "Players list"
-         :rows 10
+        {:aria-label    "Players list"
+         :rows          10
          :default-value (when dev-mode? default-list)
-         :on-change #(re-frame/dispatch [:set-list (get-value %)])}]]]
+         :on-change     #(re-frame/dispatch [:set-list (get-value %)])}]]]
      [:div.row-sm
       [primbut #(re-frame/dispatch [:save-list]) "Save list"]]]
     [:div.row.justify-content-md-center
      [:div.row.row-sm
       [:div.col.col-sm.d-flex.justify-content-between
        [primbut #(re-frame/dispatch [:clear-list]) "Clear list"]
+       [number-of-teams]
        [primbut #(re-frame/dispatch [:reset-ratings]) "Reset ratings"]]] ;
      [:div.row-sm
       [players-table]]
