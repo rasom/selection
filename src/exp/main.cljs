@@ -112,13 +112,18 @@
 
 (defn suggestion [title label]
   (let [teams        (get-sub [:suggestion label])
-        just-copied? (reagent.core/atom false)]
+        just-copied? (reagent.core/atom false)
+        teams-number (get-sub [:teams-number])]
     (when teams
       [:div.row-sm
        [:table.table.table-sm
         [:thead
          [:tr
-          [:th {:scope :col} title]
+          [:th
+           (cond-> {:scope :col}
+             (= 3 teams-number)
+             (assoc :col-span 2))
+           title]
           [:th
            [primbut #(do (reset! just-copied? true)
                          (js/setInterval
@@ -132,7 +137,7 @@
          [:tr
           (for [team teams]
             ^{:key (:name team)}
-            [:td {:style {:width (goog.string/format "%d%" (/ 100 (get-sub [:teams-number])))}}
+            [:td {:style {:width (goog.string/format "%d%" (/ 100 teams-number))}}
              [suggested-team team]])]]]])))
 
 (def default-list

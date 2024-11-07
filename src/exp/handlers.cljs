@@ -100,17 +100,21 @@
                players-list))
        (assoc :ratings {}))))
 
+(defn default-teams [teams-number]
+  (->> [:white :black :green]
+       (take teams-number)
+       (map (fn [n]
+              [n {:players []
+                  :rating  0
+                  :name    n}]))
+       (into {})))
+
 (re-frame/reg-flow
  {:id     :suggestions
   :inputs {:players-list [:players-list]
            :teams-number [:teams-number]}
   :output (fn [{:keys [players-list teams-number]}]
-            (let [teams (cond->
-                         {:white {:players [], :rating 0},
-                          :black {:players [], :rating 0}
-                          :green {:players [], :rating 0}}
-                          (= 2 teams-number)
-                          (dissoc :green))]
+            (let [teams (default-teams teams-number)]
               {:best
                (-> players-list
                    vals
@@ -119,16 +123,13 @@
                :worst
                (-> players-list
                    vals
-                   (algo/from-top teams #{})
+                   (algo/from-bottom teams #{})
                    vals)
                :avg
                (when (= 2 teams-number)
                  (-> players-list
                      vals
-                     (algo/avg-vs-rest
-                      {:white {:players [], :rating 0},
-                       :black {:players [], :rating 0}}
-                      #{})
+                     (algo/avg-vs-rest (default-teams 2) #{})
                      vals))}))
   :path   [:suggestions]})
 
