@@ -46,16 +46,25 @@
  :reset-db
  (fn [_] {}))
 
+(defn name-and-rating [line]
+  (re-find #"^\d[^\.]*\.[\s]*([^$^\-^\d]*)[\-\s]*([\d]*)" line))
+
 (defn list->names [string-list]
   (->> string-list
        string/split-lines
-       (keep #(second (re-find #"^\d[^\.]*\.[\s]*([^$]*)" %)))))
+       (keep #(rest (name-and-rating %)))))
 
 (defn parse-list [string-list]
   (->> string-list
        list->names
        (map-indexed
-        #(hash-map :id %1 :name %2))))
+        (fn [idx [name rating]]
+          {:id     idx
+           :name   (string/trim name)
+           :rating (when-not (empty? rating)
+                     (let [parsed-rating (js/parseInt rating)]
+                       (when (< 0 parsed-rating 8)
+                         parsed-rating)))}))))
 
 (handler
  :set-list
@@ -67,8 +76,8 @@
 (defn add-ratings
   [ratings players]
   (map
-   (fn [{:keys [name] :as player}]
-     (assoc player :rating (get ratings name default-rating)))
+   (fn [{:keys [name rating] :as player}]
+     (assoc player :rating (or rating (get ratings name default-rating))))
    players))
 
 (handler
