@@ -13,7 +13,12 @@
    (fn [db]
      (js/localStorage.setItem "db" (prn-str db)))))
 
-(def all-interceptors [db-interceptor])
+(re-frame/reg-cofx
+ :gen-seed
+ (fn [coeffects _]
+   (assoc coeffects :seed (algo/gen-seed!))))
+
+(def all-interceptors [db-interceptor (re-frame/inject-cofx :gen-seed)])
 
 (defn handler [n h]
   (re-frame/reg-event-db
@@ -32,9 +37,10 @@
 (handler
  :init
  (fn [_ str-db]
-   (if (empty? str-db)
-     default-db
-     (clojure.edn/read-string str-db))))
+   (let [parsed-db (clojure.edn/read-string str-db)]
+     (if (empty? parsed-db)
+       default-db
+       (clojure.edn/read-string str-db)))))
 
 (handler
  :reset-db
@@ -100,6 +106,11 @@
                players-list))
        (assoc :ratings {}))))
 
+(handler-fx
+ :reset-seeds
+ (fn [{:keys [seed]} db algo-name]
+   {:db (assoc-in db [:seeds algo-name] seed)}))
+
 (defn default-teams [teams-number]
   (->> [:white :black :green]
        (take teams-number)
@@ -112,25 +123,27 @@
 (re-frame/reg-flow
  {:id     :suggestions
   :inputs {:players-list [:players-list]
-           :teams-number [:teams-number]}
-  :output (fn [{:keys [players-list teams-number]}]
-            (let [teams (default-teams teams-number)]
-              {:best
-               (-> players-list
-                   vals
-                   (algo/from-top teams #{})
-                   vals)
-               :worst
-               (-> players-list
-                   vals
-                   (algo/from-bottom teams #{})
-                   vals)
-               :avg
-               (when (= 2 teams-number)
+           :teams-number [:teams-number]
+           :seeds        [:seeds]}
+  :output (fn [{:keys [players-list teams-number seeds]}]
+            (when-not (empty? players-list)
+              (let [teams (default-teams teams-number)]
+                {:best
                  (-> players-list
                      vals
-                     (algo/avg-vs-rest (default-teams 2) #{})
-                     vals))}))
+                     (algo/from-top teams #{} (get seeds :best))
+                     vals)
+                 :worst
+                 (-> players-list
+                     vals
+                     (algo/from-bottom teams #{} (get seeds :worst))
+                     vals)
+                 :avg
+                 (when (= 2 teams-number)
+                   (-> players-list
+                       vals
+                       (algo/avg-vs-rest (default-teams 2) #{} (get seeds :avg))
+                       vals))})))
   :path   [:suggestions]})
 
 (handler

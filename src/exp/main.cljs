@@ -41,6 +41,12 @@
     :on-click on-click}
    text])
 
+(defn nobut [on-click text]
+  [:button.btn.btn-sm
+   {:type     :submit
+    :on-click on-click}
+   text])
+
 (defn players-table []
   [:table.table.table-sm
    [:thead
@@ -132,7 +138,10 @@
                          (.stopPropagation %)
                          (copy-to-clipboard
                           (players-list->string teams)))
-            [copy-label just-copied?]]]]]
+            [copy-label just-copied?]]
+           [nobut
+            #(re-frame/dispatch [:reset-seeds label])
+            [:label "Refresh " [:i.bi.bi-arrow-clockwise]]]]]]
         [:tbody
          [:tr
           (for [team teams]
